@@ -1,65 +1,66 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+# the first two lines are modeling for vim or emacs in case you are using them
+# read more : https://vim.fandom.com/wiki/Modeline_magic and http://www.gnu.org/software/emacs/manual/html_node/emacs/Choosing-Modes.html
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
+
 Vagrant.configure("2") do |config|
+  config.vm.boot_timeout = 1200
+	config.vm.box = "bento/centos-stream-8"
+	config.vm.box_check_update = false
 
-  config.vm.box = "centos/8"
+  
+	config.vm.provider "virtualbox" do |v|
+		v.memory = 1024
+		v.cpus = 1
+		v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+		v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+	end
 
-  config.vm.define "mjalenquS" do |control|
-    control.vm.hostname = "mjalenquS"
-    control.vm.network "private_network", ip: "192.168.42.110"
+	config.vm.define 'mjalenquS' do |master|
+		master.vm.hostname = 'mjalenquS'
+		master.vm.network :private_network, ip: '192.168.42.110'
 
-    control.vm.provider "virtualbox" do |vb|
-      vb.memory = "512"
-      vb.cpus = 1
-    end
-  end
+		master.vm.provider "virtualbox" do |v|
+			v.name = 'mjalenquS'
+		end
+		master.vm.provision "file", source:".ssh/id_rsa.pub", destination: "/tmp/id_rsa.pub"
+		master.vm.provision "shell", inline: <<-SHELL
+			sudo sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+			sudo sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+			sudo yum update -y
+			sudo yum install -y net-tools
+			mkdir -p /root/.ssh
+			cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys
+			curl -sfL https://get.k3s.io | sh -s - server \
+				--write-kubeconfig-mode 644 \
+				--node-ip=192.168.42.110 \
+				--flannel-iface=eth1
+		SHELL
+	end
 
-  config.vm.define "mjalenquSW" do |control|
-    control.vm.hostname = "mjalenquSW"
-    control.vm.network "private_network", ip: "192.168.42.111"
+	config.vm.define 'mjalenquSW' do |worker|
+		worker.vm.hostname = 'mjalenquSW'
+		worker.vm.network :private_network, ip: '192.168.42.111'
 
-    control.vm.provider "virtualbox" do |vb|
-      vb.memory = "512"
-      vb.cpus = 1
-    end
-  end
-
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
-
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+		worker.vm.provider "virtualbox" do |v|
+			v.name = 'mjalenquSW'
+		end
+		worker.vm.provision "file", source:".ssh/id_rsa", destination: "/tmp/id_rsa"
+		worker.vm.provision "shell", inline: <<-SHELL
+			sudo sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+			sudo sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+			sudo yum update -y
+			mkdir -p /root/.ssh
+			mv /tmp/id_rsa /root/.ssh/id_rsa
+			echo "mv done"
+			scp -o StrictHostKeyChecking=no root@192.168.42.110:/var/lib/rancher/k3s/server/token /tmp/token
+			echo "scp done"
+			curl -sfL https://get.k3s.io | sh -s - agent \
+    			--server "https://192.168.42.110:6443" \
+    			--token-file "/tmp/token" \
+				--flannel-iface=eth1
+    		kubectl get nodes -o wide
+		SHELL
+	end
 end
