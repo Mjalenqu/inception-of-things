@@ -1,10 +1,9 @@
+sudo systemctl disable --now firewalld
 echo "Running yum update"
 sudo yum update -y
 echo "Install net-tools"
 sudo yum install -y net-tools
 echo "Copy ssh key"
-sudo mkdir -p /root/.ssh
-sudo cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys
 mkdir -p /home/vagrant/.ssh
 cat /tmp/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys
 echo "Install k3s"
@@ -26,4 +25,3 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cl
 EOF
 sudo yum install -y kubectl
 kubectl apply -f .
-# whoami
