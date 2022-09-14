@@ -14,3 +14,4 @@ sleep 5
 
 echo "Install ArgoCD in namespace argocd"
 kubectl apply -n argocd -f /home/vagrant/install-argo.yaml
+

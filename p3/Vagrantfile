@@ -25,7 +25,8 @@ Vagrant.configure("2") do |config|
 			  v.name = 'mjalenquS3'
 		  end
 		  master.vm.provision "file", source:"~/.ssh/id_rsa.pub", destination: "/tmp/id_rsa.pub"
-		  master.vm.provision "shell", path: "p3.sh", privileged: false
+		  master.vm.provision "file", source:"ingress.yaml", destination: "/home/vagrant/ingress.yaml"
+		#   master.vm.provision "shell", path: "p3.sh", privileged: false
 		  master.vm.provision "shell", path: "deploy.sh", privileged: false
 	  end
   end
