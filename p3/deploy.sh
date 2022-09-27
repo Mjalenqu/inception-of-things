@@ -19,8 +19,8 @@ kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}
 
 echo "Get acrgocd UI password in clear text"
 echo "--------admin--------"
-kubectl -n argocd get secret argocd-inital-admin-secret -o jsonpath="{.data.password}" | base64 -d
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 echo "---------------------"
 
-kubectl apply -f -n argocd will-app.yaml
+kubectl apply -n argocd -f app.yaml
 
