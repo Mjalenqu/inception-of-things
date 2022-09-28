@@ -1,6 +1,6 @@
 sudo systemctl disable --now firewalld
-echo "Running yum update"
-sudo yum update -y
+# echo "Running yum update"
+# sudo yum update -y
 # echo "Install net-tools"
 # sudo yum install -y net-tools
 echo "Copy ssh key"
